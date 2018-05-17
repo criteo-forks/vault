@@ -30,6 +30,7 @@ import (
 	"github.com/hashicorp/vault/logical"
 	"github.com/hashicorp/vault/logical/framework"
 	"github.com/mitchellh/mapstructure"
+	"github.com/hashicorp/vault/physical"
 )
 
 var (
@@ -728,6 +729,24 @@ func NewSystemBackend(core *Core, logger log.Logger) *SystemBackend {
 				HelpDescription: strings.TrimSpace(sysHelp["policy"][1]),
 			},
 
+			&framework.Path{
+				Pattern: "cache(/(?P<path>.+)?)?",
+				Fields: map[string]*framework.FieldSchema{
+					"path": &framework.FieldSchema{
+						Type:        framework.TypeString,
+						Description: strings.TrimSpace(sysHelp["cache-path"][0]),
+					},
+				},
+
+				Callbacks: map[logical.Operation]framework.OperationFunc{
+					logical.ReadOperation:   b.handleCacheRead,
+					logical.ListOperation:   b.handleCacheList,
+					logical.DeleteOperation: b.handleCacheDelete,
+				},
+
+				HelpSynopsis:    strings.TrimSpace(sysHelp["cache"][0]),
+				HelpDescription: strings.TrimSpace(sysHelp["cache"][1]),
+			},
 			&framework.Path{
 				Pattern:         "seal-status$",
 				HelpSynopsis:    strings.TrimSpace(sysHelp["seal-status"][0]),
@@ -1618,7 +1637,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 		err := mapstructure.Decode(configMap, &apiConfig)
 		if err != nil {
 			return logical.ErrorResponse(
-					"unable to convert given mount config information"),
+				"unable to convert given mount config information"),
 				logical.ErrInvalidRequest
 		}
 	}
@@ -1630,7 +1649,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 		tmpDef, err := parseutil.ParseDurationSecond(apiConfig.DefaultLeaseTTL)
 		if err != nil {
 			return logical.ErrorResponse(fmt.Sprintf(
-					"unable to parse default TTL of %s: %s", apiConfig.DefaultLeaseTTL, err)),
+				"unable to parse default TTL of %s: %s", apiConfig.DefaultLeaseTTL, err)),
 				logical.ErrInvalidRequest
 		}
 		config.DefaultLeaseTTL = tmpDef
@@ -1643,7 +1662,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 		tmpMax, err := parseutil.ParseDurationSecond(apiConfig.MaxLeaseTTL)
 		if err != nil {
 			return logical.ErrorResponse(fmt.Sprintf(
-					"unable to parse max TTL of %s: %s", apiConfig.MaxLeaseTTL, err)),
+				"unable to parse max TTL of %s: %s", apiConfig.MaxLeaseTTL, err)),
 				logical.ErrInvalidRequest
 		}
 		config.MaxLeaseTTL = tmpMax
@@ -1651,20 +1670,20 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 
 	if config.MaxLeaseTTL != 0 && config.DefaultLeaseTTL > config.MaxLeaseTTL {
 		return logical.ErrorResponse(
-				"given default lease TTL greater than given max lease TTL"),
+			"given default lease TTL greater than given max lease TTL"),
 			logical.ErrInvalidRequest
 	}
 
 	if config.DefaultLeaseTTL > b.Core.maxLeaseTTL && config.MaxLeaseTTL == 0 {
 		return logical.ErrorResponse(fmt.Sprintf(
-				"given default lease TTL greater than system max lease TTL of %d", int(b.Core.maxLeaseTTL.Seconds()))),
+			"given default lease TTL greater than system max lease TTL of %d", int(b.Core.maxLeaseTTL.Seconds()))),
 			logical.ErrInvalidRequest
 	}
 
 	switch logicalType {
 	case "":
 		return logical.ErrorResponse(
-				"backend type must be specified as a string"),
+			"backend type must be specified as a string"),
 			logical.ErrInvalidRequest
 
 	case "plugin":
@@ -1677,7 +1696,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 			config.PluginName = pluginName
 		default:
 			return logical.ErrorResponse(
-					"plugin_name must be provided for plugin backend"),
+				"plugin_name must be provided for plugin backend"),
 				logical.ErrInvalidRequest
 		}
 	}
@@ -1703,7 +1722,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 	default:
 		if options != nil && options["version"] != "" {
 			return logical.ErrorResponse(fmt.Sprintf(
-					"secrets engine %q does not allow setting a version", logicalType)),
+				"secrets engine %q does not allow setting a version", logicalType)),
 				logical.ErrInvalidRequest
 		}
 	}
@@ -1814,7 +1833,7 @@ func (b *SystemBackend) handleRemount(ctx context.Context, req *logical.Request,
 	toPath := data.Get("to").(string)
 	if fromPath == "" || toPath == "" {
 		return logical.ErrorResponse(
-				"both 'from' and 'to' path must be specified as a string"),
+			"both 'from' and 'to' path must be specified as a string"),
 			logical.ErrInvalidRequest
 	}
 
@@ -1840,7 +1859,7 @@ func (b *SystemBackend) handleAuthTuneRead(ctx context.Context, req *logical.Req
 	path := data.Get("path").(string)
 	if path == "" {
 		return logical.ErrorResponse(
-				"path must be specified as a string"),
+			"path must be specified as a string"),
 			logical.ErrInvalidRequest
 	}
 	return b.handleTuneReadCommon("auth/" + path)
@@ -1851,7 +1870,7 @@ func (b *SystemBackend) handleMountTuneRead(ctx context.Context, req *logical.Re
 	path := data.Get("path").(string)
 	if path == "" {
 		return logical.ErrorResponse(
-				"path must be specified as a string"),
+			"path must be specified as a string"),
 			logical.ErrInvalidRequest
 	}
 
@@ -2404,7 +2423,7 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 		err := mapstructure.Decode(configMap, &apiConfig)
 		if err != nil {
 			return logical.ErrorResponse(
-					"unable to convert given auth config information"),
+				"unable to convert given auth config information"),
 				logical.ErrInvalidRequest
 		}
 	}
@@ -2416,7 +2435,7 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 		tmpDef, err := parseutil.ParseDurationSecond(apiConfig.DefaultLeaseTTL)
 		if err != nil {
 			return logical.ErrorResponse(fmt.Sprintf(
-					"unable to parse default TTL of %s: %s", apiConfig.DefaultLeaseTTL, err)),
+				"unable to parse default TTL of %s: %s", apiConfig.DefaultLeaseTTL, err)),
 				logical.ErrInvalidRequest
 		}
 		config.DefaultLeaseTTL = tmpDef
@@ -2429,7 +2448,7 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 		tmpMax, err := parseutil.ParseDurationSecond(apiConfig.MaxLeaseTTL)
 		if err != nil {
 			return logical.ErrorResponse(fmt.Sprintf(
-					"unable to parse max TTL of %s: %s", apiConfig.MaxLeaseTTL, err)),
+				"unable to parse max TTL of %s: %s", apiConfig.MaxLeaseTTL, err)),
 				logical.ErrInvalidRequest
 		}
 		config.MaxLeaseTTL = tmpMax
@@ -2437,20 +2456,20 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 
 	if config.MaxLeaseTTL != 0 && config.DefaultLeaseTTL > config.MaxLeaseTTL {
 		return logical.ErrorResponse(
-				"given default lease TTL greater than given max lease TTL"),
+			"given default lease TTL greater than given max lease TTL"),
 			logical.ErrInvalidRequest
 	}
 
 	if config.DefaultLeaseTTL > b.Core.maxLeaseTTL && config.MaxLeaseTTL == 0 {
 		return logical.ErrorResponse(fmt.Sprintf(
-				"given default lease TTL greater than system max lease TTL of %d", int(b.Core.maxLeaseTTL.Seconds()))),
+			"given default lease TTL greater than system max lease TTL of %d", int(b.Core.maxLeaseTTL.Seconds()))),
 			logical.ErrInvalidRequest
 	}
 
 	switch logicalType {
 	case "":
 		return logical.ErrorResponse(
-				"backend type must be specified as a string"),
+			"backend type must be specified as a string"),
 			logical.ErrInvalidRequest
 
 	case "plugin":
@@ -2463,14 +2482,14 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 			config.PluginName = pluginName
 		default:
 			return logical.ErrorResponse(
-					"plugin_name must be provided for plugin backend"),
+				"plugin_name must be provided for plugin backend"),
 				logical.ErrInvalidRequest
 		}
 	}
 
 	if options != nil && options["version"] != "" {
 		return logical.ErrorResponse(fmt.Sprintf(
-				"auth method %q does not allow setting a version", logicalType)),
+			"auth method %q does not allow setting a version", logicalType)),
 			logical.ErrInvalidRequest
 	}
 
@@ -3753,6 +3772,91 @@ func checkListingVisibility(visibility ListingVisiblityType) error {
 	return nil
 }
 
+func (b *SystemBackend) handleCacheRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+	if b.Core.cachingDisabled {
+		return &logical.Response{Warnings: []string{"caching is disabled."}}, nil
+	}
+
+	var path string
+	if raw, _, err := data.GetOkErr("path"); err != nil {
+		return logical.ErrorResponse(err.Error()), logical.ErrInvalidRequest
+	} else if str, ok := raw.(string); ok {
+		path = str
+	} else {
+		return logical.ErrorResponse("path is not a string"), logical.ErrInvalidRequest
+	}
+
+	if !b.System().SudoPrivilege(ctx, req.MountPoint+req.Path, req.ClientToken) {
+		return logical.ErrorResponse("sudo is required to read cache"), logical.ErrPermissionDenied
+	}
+
+	for _, p := range protectedPaths {
+		if strings.HasPrefix(path, p) {
+			err := fmt.Sprintf("cannot read '%s'", path)
+			return logical.ErrorResponse(err), logical.ErrInvalidRequest
+		}
+	}
+
+	if physicalCache, ok := b.Core.physicalCache.(*physical.Cache); !ok {
+		return nil, fmt.Errorf("physical backend is not a cache")
+	} else {
+		encryptedEntry, err := physicalCache.Peek(ctx, path)
+		if err != nil {
+			return logical.ErrorResponse(err.Error()), logical.ErrInvalidRequest
+		} else if encryptedEntry == nil {
+			return nil, nil
+		}
+		value := encryptedEntry.Value
+		if b.Core.rawEnabled {
+			value, err = b.Core.barrier.Decrypt(ctx, path, value)
+			if err != nil {
+				return nil, err
+			}
+			if decompressed, _, err := compressutil.Decompress(value); err != nil {
+				return handleErrorNoReadOnlyForward(err)
+			} else if decompressed != nil {
+				value = decompressed
+			}
+			return &logical.Response{
+				Data: map[string]interface{}{"value": string(value)},
+			}, nil
+		}
+		return &logical.Response{
+			Data: map[string]interface{}{"value": value},
+		}, nil
+	}
+}
+
+func (b *SystemBackend) handleCacheList(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+	if b.Core.cachingDisabled {
+		return logical.ErrorResponse("caching is disabled"), nil
+	}
+	prefix := data.Get("path").(string)
+	if !b.System().SudoPrivilege(ctx, req.MountPoint+req.Path, req.ClientToken) {
+		return logical.ErrorResponse("sudo is required to read cache"), logical.ErrPermissionDenied
+	}
+	if physicalCache, ok := b.Core.physicalCache.(*physical.Cache); !ok {
+		return nil, fmt.Errorf("physical backend is not a cache")
+	} else {
+		keys, err := physicalCache.Keys(ctx, prefix)
+		if err != nil {
+			return nil, err
+		}
+		return &logical.Response{
+			Data: map[string]interface{}{"keys": keys},
+		}, nil
+	}
+}
+
+func (b *SystemBackend) handleCacheDelete(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+	if b.Core.cachingDisabled {
+		return logical.ErrorResponse("caching is disabled"), nil
+	}
+
+	b.Core.physicalCache.Purge(ctx)
+	return &logical.Response{Data: map[string]interface{}{"success": true}}, nil
+}
+
 const sysHelpRoot = `
 The system backend is built-in to Vault and cannot be remounted or
 unmounted. It contains the paths that are used to configure Vault itself
@@ -4348,6 +4452,14 @@ This path responds to the following HTTP methods.
 	},
 	"raw": {
 		"Write, Read, and Delete data directly in the Storage backend.",
+		"",
+	},
+	"cache": {
+		"Read or purge cache if enabled.",
+		`This path respond to the following HTTP methods: GET, LIST, DELETE`,
+	},
+	"cache-path": {
+		"The path or the prefix to be returned for GET/LIST operations.",
 		"",
 	},
 	"internal-ui-mounts": {
