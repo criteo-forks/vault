@@ -4,11 +4,11 @@ import (
 	"context"
 	"sync/atomic"
 
+	"fmt"
 	log "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/golang-lru"
 	"github.com/hashicorp/vault/helper/locksutil"
 	"github.com/hashicorp/vault/helper/pathmanager"
-	"fmt"
 	"strings"
 )
 
@@ -208,9 +208,9 @@ func (c *Cache) Keys(ctx context.Context, prefix string) ([]string, error) {
 		defer lock.Unlock()
 	}
 	keys := c.lru.Keys()
-	ret := make([]string, 0,  len(keys))
+	ret := make([]string, 0, len(keys))
 	for _, key := range keys {
-		if str, ok := key.(string); ok{
+		if str, ok := key.(string); ok {
 			if strings.HasPrefix(str, prefix) {
 				ret = append(ret, str)
 			}
