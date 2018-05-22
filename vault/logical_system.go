@@ -29,8 +29,8 @@ import (
 	"github.com/hashicorp/vault/helper/wrapping"
 	"github.com/hashicorp/vault/logical"
 	"github.com/hashicorp/vault/logical/framework"
-	"github.com/mitchellh/mapstructure"
 	"github.com/hashicorp/vault/physical"
+	"github.com/mitchellh/mapstructure"
 )
 
 var (
@@ -1637,7 +1637,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 		err := mapstructure.Decode(configMap, &apiConfig)
 		if err != nil {
 			return logical.ErrorResponse(
-				"unable to convert given mount config information"),
+					"unable to convert given mount config information"),
 				logical.ErrInvalidRequest
 		}
 	}
@@ -1649,7 +1649,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 		tmpDef, err := parseutil.ParseDurationSecond(apiConfig.DefaultLeaseTTL)
 		if err != nil {
 			return logical.ErrorResponse(fmt.Sprintf(
-				"unable to parse default TTL of %s: %s", apiConfig.DefaultLeaseTTL, err)),
+					"unable to parse default TTL of %s: %s", apiConfig.DefaultLeaseTTL, err)),
 				logical.ErrInvalidRequest
 		}
 		config.DefaultLeaseTTL = tmpDef
@@ -1662,7 +1662,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 		tmpMax, err := parseutil.ParseDurationSecond(apiConfig.MaxLeaseTTL)
 		if err != nil {
 			return logical.ErrorResponse(fmt.Sprintf(
-				"unable to parse max TTL of %s: %s", apiConfig.MaxLeaseTTL, err)),
+					"unable to parse max TTL of %s: %s", apiConfig.MaxLeaseTTL, err)),
 				logical.ErrInvalidRequest
 		}
 		config.MaxLeaseTTL = tmpMax
@@ -1670,20 +1670,20 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 
 	if config.MaxLeaseTTL != 0 && config.DefaultLeaseTTL > config.MaxLeaseTTL {
 		return logical.ErrorResponse(
-			"given default lease TTL greater than given max lease TTL"),
+				"given default lease TTL greater than given max lease TTL"),
 			logical.ErrInvalidRequest
 	}
 
 	if config.DefaultLeaseTTL > b.Core.maxLeaseTTL && config.MaxLeaseTTL == 0 {
 		return logical.ErrorResponse(fmt.Sprintf(
-			"given default lease TTL greater than system max lease TTL of %d", int(b.Core.maxLeaseTTL.Seconds()))),
+				"given default lease TTL greater than system max lease TTL of %d", int(b.Core.maxLeaseTTL.Seconds()))),
 			logical.ErrInvalidRequest
 	}
 
 	switch logicalType {
 	case "":
 		return logical.ErrorResponse(
-			"backend type must be specified as a string"),
+				"backend type must be specified as a string"),
 			logical.ErrInvalidRequest
 
 	case "plugin":
@@ -1696,7 +1696,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 			config.PluginName = pluginName
 		default:
 			return logical.ErrorResponse(
-				"plugin_name must be provided for plugin backend"),
+					"plugin_name must be provided for plugin backend"),
 				logical.ErrInvalidRequest
 		}
 	}
@@ -1722,7 +1722,7 @@ func (b *SystemBackend) handleMount(ctx context.Context, req *logical.Request, d
 	default:
 		if options != nil && options["version"] != "" {
 			return logical.ErrorResponse(fmt.Sprintf(
-				"secrets engine %q does not allow setting a version", logicalType)),
+					"secrets engine %q does not allow setting a version", logicalType)),
 				logical.ErrInvalidRequest
 		}
 	}
@@ -1833,7 +1833,7 @@ func (b *SystemBackend) handleRemount(ctx context.Context, req *logical.Request,
 	toPath := data.Get("to").(string)
 	if fromPath == "" || toPath == "" {
 		return logical.ErrorResponse(
-			"both 'from' and 'to' path must be specified as a string"),
+				"both 'from' and 'to' path must be specified as a string"),
 			logical.ErrInvalidRequest
 	}
 
@@ -1859,7 +1859,7 @@ func (b *SystemBackend) handleAuthTuneRead(ctx context.Context, req *logical.Req
 	path := data.Get("path").(string)
 	if path == "" {
 		return logical.ErrorResponse(
-			"path must be specified as a string"),
+				"path must be specified as a string"),
 			logical.ErrInvalidRequest
 	}
 	return b.handleTuneReadCommon("auth/" + path)
@@ -1870,7 +1870,7 @@ func (b *SystemBackend) handleMountTuneRead(ctx context.Context, req *logical.Re
 	path := data.Get("path").(string)
 	if path == "" {
 		return logical.ErrorResponse(
-			"path must be specified as a string"),
+				"path must be specified as a string"),
 			logical.ErrInvalidRequest
 	}
 
@@ -2423,7 +2423,7 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 		err := mapstructure.Decode(configMap, &apiConfig)
 		if err != nil {
 			return logical.ErrorResponse(
-				"unable to convert given auth config information"),
+					"unable to convert given auth config information"),
 				logical.ErrInvalidRequest
 		}
 	}
@@ -2435,7 +2435,7 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 		tmpDef, err := parseutil.ParseDurationSecond(apiConfig.DefaultLeaseTTL)
 		if err != nil {
 			return logical.ErrorResponse(fmt.Sprintf(
-				"unable to parse default TTL of %s: %s", apiConfig.DefaultLeaseTTL, err)),
+					"unable to parse default TTL of %s: %s", apiConfig.DefaultLeaseTTL, err)),
 				logical.ErrInvalidRequest
 		}
 		config.DefaultLeaseTTL = tmpDef
@@ -2448,7 +2448,7 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 		tmpMax, err := parseutil.ParseDurationSecond(apiConfig.MaxLeaseTTL)
 		if err != nil {
 			return logical.ErrorResponse(fmt.Sprintf(
-				"unable to parse max TTL of %s: %s", apiConfig.MaxLeaseTTL, err)),
+					"unable to parse max TTL of %s: %s", apiConfig.MaxLeaseTTL, err)),
 				logical.ErrInvalidRequest
 		}
 		config.MaxLeaseTTL = tmpMax
@@ -2456,20 +2456,20 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 
 	if config.MaxLeaseTTL != 0 && config.DefaultLeaseTTL > config.MaxLeaseTTL {
 		return logical.ErrorResponse(
-			"given default lease TTL greater than given max lease TTL"),
+				"given default lease TTL greater than given max lease TTL"),
 			logical.ErrInvalidRequest
 	}
 
 	if config.DefaultLeaseTTL > b.Core.maxLeaseTTL && config.MaxLeaseTTL == 0 {
 		return logical.ErrorResponse(fmt.Sprintf(
-			"given default lease TTL greater than system max lease TTL of %d", int(b.Core.maxLeaseTTL.Seconds()))),
+				"given default lease TTL greater than system max lease TTL of %d", int(b.Core.maxLeaseTTL.Seconds()))),
 			logical.ErrInvalidRequest
 	}
 
 	switch logicalType {
 	case "":
 		return logical.ErrorResponse(
-			"backend type must be specified as a string"),
+				"backend type must be specified as a string"),
 			logical.ErrInvalidRequest
 
 	case "plugin":
@@ -2482,14 +2482,14 @@ func (b *SystemBackend) handleEnableAuth(ctx context.Context, req *logical.Reque
 			config.PluginName = pluginName
 		default:
 			return logical.ErrorResponse(
-				"plugin_name must be provided for plugin backend"),
+					"plugin_name must be provided for plugin backend"),
 				logical.ErrInvalidRequest
 		}
 	}
 
 	if options != nil && options["version"] != "" {
 		return logical.ErrorResponse(fmt.Sprintf(
-			"auth method %q does not allow setting a version", logicalType)),
+				"auth method %q does not allow setting a version", logicalType)),
 			logical.ErrInvalidRequest
 	}
 
