@@ -19,7 +19,7 @@
           glyph=(if item.isFolder 'folder' 'file')
           size=14
           class="has-text-grey-light"
-        }}{{if (eq item.id ' ') '(self)' (or item.keyWithoutParent item.id)}}
+        }}{{if (eq item.id ' ') '(self)' (or item.id item.id)}}
       {{/secret-link}}
     </div>
     <div class="column has-text-right">
