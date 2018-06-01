@@ -54,7 +54,7 @@ export default DS.Store.extend({
     const modelName = normalizeModelName(modelType);
     const responsePath = generalquery.responsePath;
     for (let i = 0; i < currentdataset.length; i++) {
-      if (!!utils.keyIsFolder(currentdataset[i])) {
+      if (utils.keyIsFolder(currentdataset[i])) {
         const query = {
           id: currentquery.id + currentdataset[i],
           backend: generalquery.backend,
