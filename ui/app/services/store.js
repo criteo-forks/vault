@@ -75,7 +75,8 @@ export default DS.Store.extend({
           }
           set(response, responsePath, null);
           this.storeDataset(modelName, generalquery, generalresponse, generaldataset);
-          await this.lazyPaginatedQueryRec(modelType, generalquery, generalresponse, generaldataset, dataset, query);
+          if (query.pageFilter)
+            await this.lazyPaginatedQueryRec(modelType, generalquery, generalresponse, generaldataset, dataset, query);
           return this.fetchPage(modelName, generalquery);
         };
         await request();
@@ -180,6 +181,9 @@ export default DS.Store.extend({
       this.serializerFor(modelName).normalizeResponse(this, this.modelFor(modelName), response, null, 'query')
     );
     const model = this.peekAll(modelName);
+    model.forEach(function(item) {
+      item.parent = query.id;
+    });
     model.set('meta', response.meta);
     return model;
   },
