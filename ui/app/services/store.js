@@ -119,7 +119,7 @@ export default DS.Store.extend({
         : get(response, responsePath);
       set(response, responsePath, null);
       this.storeDataset(modelName, query, response, dataset);
-      if (query.pageFilter)
+      if (query.pageFilter && !modelType.includes('secret'))
         await this.lazyPaginatedQueryRec(modelType, query, response, dataset, dataset, query);
       return this.fetchPage(modelName, query);
     };
@@ -127,7 +127,7 @@ export default DS.Store.extend({
       return request();
     }
     catch (e) {
-      throw e;
+      return e;
     }
   },
 
