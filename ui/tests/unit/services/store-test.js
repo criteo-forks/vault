@@ -187,11 +187,6 @@ test('store.lazyPaginatedQuery', function(assert) {
   Ember.run(function() {
     store.lazyPaginatedQuery('transit-key', query);
   });
-  assert.deepEqual(
-    store.getDataset('transit-key', query),
-    { response: { data: null }, dataset: ['foo'] },
-    'stores returned dataset'
-  );
   assert.throws(
     () => {
       store.lazyPaginatedQuery('transit-key', {});
