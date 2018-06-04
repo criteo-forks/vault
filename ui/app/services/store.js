@@ -37,6 +37,19 @@ export default DS.Store.extend({
     lazyCaches.set(modelKey, cache);
   },
 
+  updateLazyCacheForModel(modelName, key, newvalue) {
+    const cacheKey = keyForCache(key);
+    const cache = this.lazyCacheForModel(modelName) || new Map();
+    var value = cache.get(cacheKey);
+    for (let i = 0; i < newvalue['dataset'].length; i++) {
+      value['dataset'].push(newvalue['dataset'][i]);
+    }
+    cache.set(cacheKey, value);
+    const lazyCaches = this.get('lazyCaches');
+    const modelKey = normalizeModelName(modelName);
+    lazyCaches.set(modelKey, cache);
+  },
+
   getLazyCacheForModel(modelName, key) {
     const cacheKey = keyForCache(key);
     const modelCache = this.lazyCacheForModel(modelName);
@@ -71,12 +84,10 @@ export default DS.Store.extend({
             ? datasetHelper.call(serializer, response)
             : get(response, responsePath);
           for (let i = 0; i < dataset.length; i++) {
-            generaldataset.push(query.id.replace(generalquery.id, "") + dataset[i]);
+            generaldataset.push(query.id.replace(generalquery.id, '') + dataset[i]);
           }
           set(response, responsePath, null);
-          this.storeDataset(modelName, generalquery, generalresponse, generaldataset);
-          if (query.pageFilter)
-            await this.lazyPaginatedQueryRec(modelType, generalquery, generalresponse, generaldataset, dataset, query);
+          await this.lazyPaginatedQueryRec(modelType, generalquery, generalresponse, generaldataset, dataset, query);
           return this.fetchPage(modelName, generalquery);
         };
         await request();
@@ -110,25 +121,24 @@ export default DS.Store.extend({
       return Ember.RSVP.resolve(this.fetchPage(modelName, query));
     }
     hasfilter = query.pageFilter;
-    const request = async () => {
-      const response = await adapter.query(this, { modelName }, query);
-      const serializer = this.serializerFor(modelName);
-      const datasetHelper = serializer.extractLazyPaginatedData;
-      const dataset = datasetHelper
-        ? datasetHelper.call(serializer, response)
-        : get(response, responsePath);
-      set(response, responsePath, null);
-      this.storeDataset(modelName, query, response, dataset);
-      if (query.pageFilter && !modelType.includes('secret'))
-        await this.lazyPaginatedQueryRec(modelType, query, response, dataset, dataset, query);
-      return this.fetchPage(modelName, query);
-    };
-    try {
-      return request();
-    }
-    catch (e) {
-      return e;
-    }
+
+    return adapter
+      .query(this, { modelName }, query)
+      .then(response => {
+        const serializer = this.serializerFor(modelName);
+        const datasetHelper = serializer.extractLazyPaginatedData;
+        const dataset = datasetHelper
+          ? datasetHelper.call(serializer, response)
+          : get(response, responsePath);
+        set(response, responsePath, null);
+        this.storeDataset(modelName, query, response, dataset);
+        if (query.pageFilter && modelType.includes('secret'))
+          this.lazyPaginatedQueryRec(modelType, query, response, dataset, dataset, query);
+        return this.fetchPage(modelName, query);
+      })
+      .catch(function(e) {
+        throw e;
+      });
   },
 
   filterData(filter, dataset) {
@@ -201,6 +211,14 @@ export default DS.Store.extend({
       dataset: array,
     };
     this.setLazyCacheForModel(modelName, query, dataSet);
+  },
+
+  updateDataset(modelName, query, response, array) {
+    const dataSet = {
+      response,
+      dataset: array,
+    };
+    this.updateLazyCacheForModel(modelName, query, dataSet);
   },
 
   clearDataset(modelName) {
