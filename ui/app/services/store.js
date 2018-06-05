@@ -37,19 +37,6 @@ export default DS.Store.extend({
     lazyCaches.set(modelKey, cache);
   },
 
-  updateLazyCacheForModel(modelName, key, newvalue) {
-    const cacheKey = keyForCache(key);
-    const cache = this.lazyCacheForModel(modelName) || new Map();
-    var value = cache.get(cacheKey);
-    for (let i = 0; i < newvalue['dataset'].length; i++) {
-      value['dataset'].push(newvalue['dataset'][i]);
-    }
-    cache.set(cacheKey, value);
-    const lazyCaches = this.get('lazyCaches');
-    const modelKey = normalizeModelName(modelName);
-    lazyCaches.set(modelKey, cache);
-  },
-
   getLazyCacheForModel(modelName, key) {
     const cacheKey = keyForCache(key);
     const modelCache = this.lazyCacheForModel(modelName);
@@ -216,14 +203,6 @@ export default DS.Store.extend({
       dataset: array,
     };
     this.setLazyCacheForModel(modelName, query, dataSet);
-  },
-
-  updateDataset(modelName, query, response, array) {
-    const dataSet = {
-      response,
-      dataset: array,
-    };
-    this.updateLazyCacheForModel(modelName, query, dataSet);
   },
 
   clearDataset(modelName) {
