@@ -81,7 +81,7 @@ export default DS.Store.extend({
           await request();
         }
         catch (e) {
-          // Permission denied
+          // Catch Errors
         }
       }
     }
@@ -107,9 +107,9 @@ export default DS.Store.extend({
     assert('page is required', typeof query.page === 'number');
     assert('size is required', query.size);
 
-    let rec = false;
-    rec = !!(!hasfilter && query.pageFilter || hasfilter && !query.pageFilter);
-    if (dataCache && !rec) {
+    let doRec = false;
+    doRec = !!(!hasfilter && query.pageFilter || hasfilter && !query.pageFilter);
+    if (dataCache && !doRec) {
       return Ember.RSVP.resolve(this.fetchPage(modelName, query));
     }
     hasfilter = query.pageFilter;
@@ -124,7 +124,7 @@ export default DS.Store.extend({
           : get(response, responsePath);
         set(response, responsePath, null);
         this.storeDataset(modelName, query, response, dataset);
-        if (query.pageFilter && modelType.includes('secret'))
+        if (query.pageFilter && modelType === 'secret')
           this.lazyPaginatedQueryRec(modelType, query, response, dataset, dataset, query);
         return this.fetchPage(modelName, query);
       })
