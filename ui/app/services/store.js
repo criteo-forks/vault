@@ -49,7 +49,7 @@ export default DS.Store.extend({
     return this.get('lazyCaches').get(normalizeModelName(modelName));
   },
 
-  async lazyPaginatedQueryRec(modelType, generalquery, generalresponse, generaldataset, currentdataset, currentquery) {
+  async lazyPaginatedQueryRecursive(modelType, generalquery, generalresponse, generaldataset, currentdataset, currentquery) {
     const adapter = this.adapterFor(modelType);
     const modelName = normalizeModelName(modelType);
     const responsePath = generalquery.responsePath;
@@ -74,7 +74,7 @@ export default DS.Store.extend({
             generaldataset.push(query.id.replace(generalquery.id, '') + dataset[i]);
           }
           set(response, responsePath, null);
-          await this.lazyPaginatedQueryRec(modelType, generalquery, generalresponse, generaldataset, dataset, query);
+          await this.lazyPaginatedQueryRecursive(modelType, generalquery, generalresponse, generaldataset, dataset, query);
           return this.fetchPage(modelName, generalquery);
         };
         try {
@@ -107,9 +107,9 @@ export default DS.Store.extend({
     assert('page is required', typeof query.page === 'number');
     assert('size is required', query.size);
 
-    let doRec = false;
-    doRec = !!(!hasfilter && query.pageFilter || hasfilter && !query.pageFilter);
-    if (dataCache && !doRec) {
+    let doRecursive = false;
+    doRecursive = !!(!hasfilter && query.pageFilter || hasfilter && !query.pageFilter);
+    if (dataCache && !doRecursive) {
       return Ember.RSVP.resolve(this.fetchPage(modelName, query));
     }
     hasfilter = query.pageFilter;
@@ -125,7 +125,7 @@ export default DS.Store.extend({
         set(response, responsePath, null);
         this.storeDataset(modelName, query, response, dataset);
         if (query.pageFilter && modelType === 'secret')
-          this.lazyPaginatedQueryRec(modelType, query, response, dataset, dataset, query);
+          this.lazyPaginatedQueryRecursive(modelType, query, response, dataset, dataset, query);
         return this.fetchPage(modelName, query);
       })
       .catch(function(e) {
