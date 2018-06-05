@@ -196,10 +196,9 @@ export default DS.Store.extend({
       this.serializerFor(modelName).normalizeResponse(this, this.modelFor(modelName), response, null, 'query')
     );
     const model = this.peekAll(modelName);
-    if (modelName.includes('secrets'))
-      model.forEach(function(item) {
-        Ember.set(item, 'parent', query.id);
-      });
+    model.forEach(function(item) {
+      Ember.set(item, 'parent', query.id);
+    });
     model.set('meta', response.meta);
     return model;
   },
