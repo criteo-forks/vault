@@ -8,26 +8,61 @@ DEPRECATIONS/CHANGES:
 
 FEATURES:
 
- * Cert auth CIDR restrictions: When using the `cert` auth method you can now
-   limit authentication to specific CIDRs; these will also be encoded in
-   resultant tokens to limit their use.
+ * Rekey Verification: Rekey operations can now require verification. This
+   turns on a two-phase process where the existing key shares authorize
+   generating a new master key, and a threshold of the new, returned key shares
+   must be provided to verify that they have been successfully received in
+   order for the actual master key to be rotated.
+ * CIDR restrictions for `cert`, `userpass`, and `kubernetes` auth methods:
+   You can now limit authentication to specific CIDRs; these will also be
+   encoded in resultant tokens to limit their use.
  * Userpass auth CIDR restrictions: When using the `userpass` auth method you
    can now limit authentication to specific CIDRs; these will also be encoded
    in resultant tokens to limit their use.
+ * Vault UI Browser CLI: The UI now supports usage of read/write/list/delete
+   commands in a CLI that can be accessed from the nav bar. Complex inputs such
+   as JSON files are not currently supported. This surfaces features otherwise
+   unsupported in Vault's UI.
+ * Azure Key Vault Auto Unseal/Seal Wrap Support (Enterprise): Azure Key Vault
+   can now be used a support seal for Auto Unseal and Seal Wrapping.
 
 IMPROVEMENTS:
 
  * api: Close renewer's doneCh when the renewer is stopped, so that programs
    expecting a final value through doneCh behave correctly [GH-4472]
+ * auth/cert: Break out `allowed_names` into component parts and add
+   `allowed_uri_sans` [GH-4231]
+ * auth/ldap: Obfuscate error messages pre-bind for greater security [GH-4700]
  * cli: `vault login` now supports a `-no-print` flag to suppress printing
    token information but still allow storing into the token helper [GH-4454]
- * core/pkcs11 (enterprise): Add support for CKM_AES_CBS_PAD, CKM_RSA_PKCS, and 
+ * core/pkcs11 (enterprise): Add support for CKM_AES_CBC_PAD, CKM_RSA_PKCS, and 
    CKM_RSA_PKCS_OAEP mechanisms
- * core/pkcs11 (enterprise): HSM slots can now be selected by token label instead
-   of just slot number
- * core/seal (enterprise): Lazily rewrap data when seal keys are rotated
+ * core/pkcs11 (enterprise): HSM slots can now be selected by token label
+   instead of just slot number
+ * core/token: Optimize token revocation by removing unnecessary list call
+   against the storage backend when calling revoke-orphan on tokens [GH-4465]
+ * core/token: Refactor token revocation logic to not block on the call when
+   underlying leases are pending revocation by moving the expiration logic to
+   the expiration manager [GH-4512]
  * expiration: Allow revoke-prefix and revoke-force to work on single leases as
    well as prefixes [GH-4450]
+ * identity: Return parent group info when reading a group [GH-4648]
+ * identity: Provide more contextual key information when listing entities,
+   groups, and aliases
+ * identity: Passthrough EntityID to backends [GH-4663]
+ * identity: Adds ability to request entity information through system view
+   [GH_4681]
+ * secret/pki: Add custom extended key usages [GH-4667]
+ * secret/pki: Add custom PKIX serial numbers [GH-4694]
+ * secret/ssh: Use hostname instead of IP in OTP mode, similar to CA mode
+   [GH-4673]
+ * storage/file: Attempt in some error conditions to do more cleanup [GH-4684]
+ * ui: wrapping lookup now distplays the path [GH-4644]
+ * ui: Identity interface now has more inline actions to make editing and adding
+   aliases to an entity or group easier [GH-4502]
+ * ui: Identity interface now lists groups by name [GH-4655]
+ * ui: Permission denied errors still render the sidebar in the Access section
+   [GH-4658]
 
 BUG FIXES:
 
@@ -42,12 +77,27 @@ BUG FIXES:
    parameters were used [GH-4582]
  * secret/gcp: Make `bound_region` able to use short names
  * secret/kv: Fix response wrapping for KV v2 [GH-4511]
+ * secret/kv: Fix address flag not being honored correctly [GH-4617]
+ * secret/pki: Fix `safety_buffer` for tidy being allowed to be negative,
+   clearing all certs [GH-4641]
  * secret/pki: Fix `key_type` not being allowed to be set to `any` [GH-4595]
  * secret/pki: Fix path length parameter being ignored when using
    `use_csr_values` and signing an intermediate CA cert [GH-4459]
+ * secret/ssh: Only append UserKnownHostsFile to args when configured with a
+   value [GH-4674]
  * storage/dynamodb: Fix listing when one child is left within a nested path
    [GH-4570]
  * ui: Fix HMAC algorithm in transit [GH-4604]
+ * ui: Fix unwrap of auth responses via the UI's unwrap tool [GH-4611]
+ * ui (enterprise): Fix parsing of version string that blocked some users from seeing
+   enterprise-specific pages in the UI [GH-4547]
+ * ui: Fix incorrect capabilities path check when viewing policies [GH-4566]
+ * replication: Fix error while running plugins on a newly created replication
+   secondary
+ * replication: Fix issue with token store lookups after a secondary's mount table
+   is invalidated.
+ * replication: Improve startup time when a large merkle index is in use.
+ * replication: Fix panic when storage becomes unreachable during unseal.
 
 ## 0.10.1/0.9.7 (April 25th, 2018)
 
