@@ -90,7 +90,12 @@ export default DS.Store.extend({
           await this.lazyPaginatedQueryRec(modelType, generalquery, generalresponse, generaldataset, dataset, query);
           return this.fetchPage(modelName, generalquery);
         };
-        await request();
+        try {
+          await request();
+        }
+        catch (e) {
+          // Permission denied
+        }
       }
     }
   },
@@ -192,7 +197,7 @@ export default DS.Store.extend({
     );
     const model = this.peekAll(modelName);
     model.forEach(function(item) {
-      item.parent = query.id;
+      Ember.set(item, 'parent', query.id);
     });
     model.set('meta', response.meta);
     return model;
