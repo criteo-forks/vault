@@ -18,9 +18,9 @@ export default Ember.Mixin.create({
     return utils.keyPartsForKey(this.get('id'));
   }),
 
-  parentKey: Ember.computed('id', 'isCreating', {
+  parentKey: Ember.computed('id', 'isCreating', 'parent', {
     get: function() {
-      return this.get('isCreating') ? this.get('initialParentKey') : utils.parentKeyForKey(this.get('id'));
+      return this.get('isCreating') ? this.get('initialParentKey') : this.get('parent');
     },
     set: function(_, value) {
       return value;

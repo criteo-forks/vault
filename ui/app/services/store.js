@@ -1,8 +1,11 @@
 import DS from 'ember-data';
 import Ember from 'ember';
 import clamp from 'vault/utils/clamp';
+import utils from 'vault/lib/key-utils';
 
 const { assert, computed, get, set } = Ember;
+
+let hasfilter = false;
 
 export function normalizeModelName(modelName) {
   return Ember.String.dasherize(modelName);
@@ -46,6 +49,43 @@ export default DS.Store.extend({
     return this.get('lazyCaches').get(normalizeModelName(modelName));
   },
 
+  async lazyPaginatedQueryRecursive(modelType, generalquery, generalresponse, generaldataset, currentdataset, currentquery) {
+    const adapter = this.adapterFor(modelType);
+    const modelName = normalizeModelName(modelType);
+    const responsePath = generalquery.responsePath;
+    for (let i = 0; i < currentdataset.length; i++) {
+      if (utils.keyIsFolder(currentdataset[i])) {
+        const query = {
+          id: currentquery.id + currentdataset[i],
+          backend: generalquery.backend,
+          responsePath: "data.keys",
+          page: generalquery.page,
+          pageFilter: generalquery.pageFilter,
+          size: 100
+        };
+        const request = async () => {
+          const response = await adapter.query(this, { modelName }, query);
+          const serializer = this.serializerFor(modelName);
+          const datasetHelper = serializer.extractLazyPaginatedData;
+          const dataset = datasetHelper
+            ? datasetHelper.call(serializer, response)
+            : get(response, responsePath);
+          for (let i = 0; i < dataset.length; i++) {
+            generaldataset.push(query.id.replace(generalquery.id, '') + dataset[i]);
+          }
+          await this.lazyPaginatedQueryRecursive(modelType, generalquery, generalresponse, generaldataset, dataset, query);
+          return this.fetchPage(modelName, generalquery);
+        };
+        try {
+          await request();
+        }
+        catch (e) {
+          // Catch Errors
+        }
+      }
+    }
+  },
+
   // This is the public interface for the store extension - to be used just
   // like `Store.query`. Special handling of the response is controlled by
   // `query.pageFilter`, `query.page`, and `query.size`.
@@ -66,9 +106,12 @@ export default DS.Store.extend({
     assert('page is required', typeof query.page === 'number');
     assert('size is required', query.size);
 
-    if (dataCache) {
+    let doRecursive = false;
+    doRecursive = !!(!hasfilter && query.pageFilter || hasfilter && !query.pageFilter);
+    if (dataCache && !doRecursive) {
       return Ember.RSVP.resolve(this.fetchPage(modelName, query));
     }
+    hasfilter = query.pageFilter;
     return adapter
       .query(this, { modelName }, query)
       .then(response => {
@@ -78,6 +121,8 @@ export default DS.Store.extend({
           ? datasetHelper.call(serializer, response)
           : get(response, responsePath);
         set(response, responsePath, null);
+        if (query.pageFilter && modelType.includes('secret'))
+          this.lazyPaginatedQueryRecursive(modelType, query, response, dataset, dataset, query);
         this.storeDataset(modelName, query, response, dataset);
         return this.fetchPage(modelName, query);
       })
@@ -146,6 +191,9 @@ export default DS.Store.extend({
           )
         );
         let model = this.peekAll(modelName).toArray();
+        model.forEach(function(item) {
+          Ember.set(item, 'parent', query.id);
+        });
         model.set('meta', response.meta);
         resolve(model);
       });
