@@ -74,7 +74,6 @@ export default DS.Store.extend({
             generaldataset.push(query.id.replace(generalquery.id, '') + dataset[i]);
           }
           await this.lazyPaginatedQueryRecursive(modelType, generalquery, generalresponse, generaldataset, dataset, query);
-          return this.fetchPage(modelName, generalquery);
         };
         try {
           await request();
@@ -114,7 +113,7 @@ export default DS.Store.extend({
     hasfilter = query.pageFilter;
     return adapter
       .query(this, { modelName }, query)
-      .then(response => {
+      .then(async response => {
         const serializer = this.serializerFor(modelName);
         const datasetHelper = serializer.extractLazyPaginatedData;
         const dataset = datasetHelper
@@ -122,7 +121,7 @@ export default DS.Store.extend({
           : get(response, responsePath);
         set(response, responsePath, null);
         if (query.pageFilter && modelType.includes('secret'))
-          this.lazyPaginatedQueryRecursive(modelType, query, response, dataset, dataset, query);
+          await this.lazyPaginatedQueryRecursive(modelType, query, response, dataset, dataset, query);
         this.storeDataset(modelName, query, response, dataset);
         return this.fetchPage(modelName, query);
       })
@@ -151,8 +150,9 @@ export default DS.Store.extend({
     const { pageFilter, responsePath, size, page } = query;
     let { response, dataset } = this.getDataset(modelName, query);
     response = Ember.copy(response, true);
+    console.log("dataset => " + dataset + "pagefilter => " + pageFilter);
     const data = this.filterData(pageFilter, dataset);
-
+    console.log("final Dataset => " + data);
     const lastPage = Math.ceil(data.length / size);
     const currentPage = clamp(page, 1, lastPage);
     const end = currentPage * size;
