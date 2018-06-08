@@ -63,24 +63,21 @@ export default DS.Store.extend({
           pageFilter: generalquery.pageFilter,
           size: 100
         };
-        const request = async () => {
-          const response = await adapter.query(this, { modelName }, query);
-          const serializer = this.serializerFor(modelName);
-          const datasetHelper = serializer.extractLazyPaginatedData;
-          const dataset = datasetHelper
-            ? datasetHelper.call(serializer, response)
-            : get(response, responsePath);
-          for (let i = 0; i < dataset.length; i++) {
-            generaldataset.push(query.id.replace(generalquery.id, '') + dataset[i]);
-          }
-          await this.lazyPaginatedQueryRecursive(modelType, generalquery, generalresponse, generaldataset, dataset, query);
-        };
-        try {
-          await request();
-        }
-        catch (e) {
-          // Catch Errors
-        }
+        await adapter
+          .query(this, {modelName}, query)
+          .then(response => {
+            const serializer = this.serializerFor(modelName);
+            const datasetHelper = serializer.extractLazyPaginatedData;
+            const dataset = datasetHelper
+              ? datasetHelper.call(serializer, response)
+              : get(response, responsePath);
+            for (let i = 0; i < dataset.length; i++) {
+              generaldataset.push(query.id.replace(generalquery.id, '') + dataset[i]);
+            }
+            this.lazyPaginatedQueryRecursive(modelType, generalquery, generalresponse, generaldataset, dataset, query);
+          })
+          .catch(function (e) {
+          });
       }
     }
   },
