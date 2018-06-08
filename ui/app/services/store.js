@@ -150,9 +150,7 @@ export default DS.Store.extend({
     const { pageFilter, responsePath, size, page } = query;
     let { response, dataset } = this.getDataset(modelName, query);
     response = Ember.copy(response, true);
-    console.log("dataset => " + dataset + "pagefilter => " + pageFilter);
     const data = this.filterData(pageFilter, dataset);
-    console.log("final Dataset => " + data);
     const lastPage = Math.ceil(data.length / size);
     const currentPage = clamp(page, 1, lastPage);
     const end = currentPage * size;
