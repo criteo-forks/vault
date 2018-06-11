@@ -78,7 +78,7 @@ export default DS.Store.extend({
           })
           .catch(function () {
             // Catch Errors
-          });git d
+          });
       }
     }
   },
