@@ -76,7 +76,8 @@ export default DS.Store.extend({
             }
             this.lazyPaginatedQueryRecursive(modelType, generalquery, generalresponse, generaldataset, dataset, query);
           })
-          .catch(function (e) {
+          .catch(function () {
+            // Catch Errors
           });
       }
     }
