@@ -1201,12 +1201,17 @@ func (b *SystemBackend) handleCORSDelete(ctx context.Context, req *logical.Reque
 }
 
 func (b *SystemBackend) handleTidyLeases(ctx context.Context, req *logical.Request, d *framework.FieldData) (*logical.Response, error) {
-	err := b.Core.expiration.Tidy()
-	if err != nil {
-		b.Backend.Logger().Error("failed to tidy leases", "error", err)
-		return handleErrorNoReadOnlyForward(err)
-	}
-	return nil, err
+	go func() {
+		err := b.Core.expiration.Tidy()
+		if err != nil {
+			b.Backend.Logger().Error("failed to tidy leases", "error", err)
+			return
+		}
+	}()
+
+	resp := &logical.Response{}
+	resp.AddWarning("Tidy operation successfully started. Any information from the operation will be printed to Vault's server logs.")
+	return resp, nil
 }
 
 func (b *SystemBackend) invalidate(ctx context.Context, key string) {
@@ -1470,6 +1475,9 @@ func (b *SystemBackend) handleCapabilities(ctx context.Context, req *logical.Req
 	for _, path := range paths {
 		pathCap, err := b.Core.Capabilities(ctx, token, path)
 		if err != nil {
+			if !strings.HasSuffix(req.Path, "capabilities-self") && errwrap.Contains(err, logical.ErrPermissionDenied.Error()) {
+				return nil, &logical.StatusBadRequest{Err: "invalid token"}
+			}
 			return nil, err
 		}
 		ret.Data[path] = pathCap
@@ -3490,15 +3498,20 @@ func (b *SystemBackend) pathInternalUIMountsRead(ctx context.Context, req *logic
 		isAuthed = true
 
 		var entity *identity.Entity
+		var te *logical.TokenEntry
 		// Load the ACL policies so we can walk the prefix for this mount
-		acl, _, entity, err = b.Core.fetchACLTokenEntryAndEntity(req)
+		acl, te, entity, _, err = b.Core.fetchACLTokenEntryAndEntity(req)
 		if err != nil {
 			return nil, err
 		}
 		if entity != nil && entity.Disabled {
+			b.logger.Warn("permission denied as the entity on the token is disabled")
 			return nil, logical.ErrPermissionDenied
 		}
-
+		if te != nil && te.EntityID != "" && entity == nil {
+			b.logger.Warn("permission denied as the entity on the token is invalid")
+			return nil, logical.ErrPermissionDenied
+		}
 	}
 
 	hasAccess := func(me *MountEntry) bool {
@@ -3572,12 +3585,17 @@ func (b *SystemBackend) pathInternalUIMountRead(ctx context.Context, req *logica
 	resp.Data["path"] = me.Path
 
 	// Load the ACL policies so we can walk the prefix for this mount
-	acl, _, entity, err := b.Core.fetchACLTokenEntryAndEntity(req)
+	acl, te, entity, _, err := b.Core.fetchACLTokenEntryAndEntity(req)
 	if err != nil {
 		return nil, err
 	}
 	if entity != nil && entity.Disabled {
+		b.logger.Warn("permission denied as the entity on the token is disabled")
 		return errResp, logical.ErrPermissionDenied
+	}
+	if te != nil && te.EntityID != "" && entity == nil {
+		b.logger.Warn("permission denied as the entity on the token is invalid")
+		return nil, logical.ErrPermissionDenied
 	}
 
 	if !hasMountAccess(acl, me.Path) {
@@ -3593,12 +3611,17 @@ func (b *SystemBackend) pathInternalUIResultantACL(ctx context.Context, req *log
 		return nil, nil
 	}
 
-	acl, _, entity, err := b.Core.fetchACLTokenEntryAndEntity(req)
+	acl, te, entity, _, err := b.Core.fetchACLTokenEntryAndEntity(req)
 	if err != nil {
 		return nil, err
 	}
 
 	if entity != nil && entity.Disabled {
+		b.logger.Warn("permission denied as the entity on the token is disabled")
+		return logical.ErrorResponse(logical.ErrPermissionDenied.Error()), nil
+	}
+	if te != nil && te.EntityID != "" && entity == nil {
+		b.logger.Warn("permission denied as the entity on the token is invalid")
 		return logical.ErrorResponse(logical.ErrPermissionDenied.Error()), nil
 	}
 
