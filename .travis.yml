@@ -1,0 +1,65 @@
+sudo: required
+dist: trusty
+
+addons:
+  chrome: stable
+
+language: go
+
+services:
+  - docker
+
+go:
+  - "1.12.9"
+
+go_import_path: github.com/hashicorp/vault
+
+matrix:
+  allow_failures:
+    - go: tip
+
+cache:
+  directories:
+  - ui/node_modules
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install --no-install-recommends -y -q curl zip build-essential gcc-multilib g++-multilib ca-certificates git mercurial bzr gnupg libltdl-dev libltdl7
+  - nvm install 10
+  - nvm use 10
+  - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.12.1
+  - export PATH="$HOME/.yarn/bin:$PATH"
+
+branches:
+  only:
+    - master
+    - travis-testing
+    - /v[0-9]+\.[0-9]+\.[0-9]+(?:criteo.+)?/
+
+env:
+  - TEST_COMMAND='make dev test-ember'
+
+script:
+- export VERSION=$(echo $TRAVIS_TAG | sed 's/^v//' )
+- export PRERELEASE=$(echo $VERSION | cut -d '-' -f 2)
+- export XC_ARCH="amd64"
+- export XC_OS="linux"
+- export XC_OSARCH="linux/amd64"
+- make bootstrap
+- sed -i "s/VersionPrerelease = \".*\"/VersionPrerelease = \"$PRERELEASE\"/" vendor/github.com/hashicorp/vault/sdk/version/version_base.go
+- eval $TEST_COMMAND
+before_deploy:
+- make bootstrap
+- make static-dist
+- make bin
+- (rm -f ./pkg/*.zip ; cd pkg/; for osarch in linux_amd64; do echo "Building tarball for ${osarch}"; cp ./$osarch/vault* . ; tar -czvf "vault-${TRAVIS_TAG//v/}.${osarch}.tar.gz" ./vault* ../LICENSE ../README.md; rm ./vault ./vault.exe; mv *.tar.gz ../ ; done)
+
+deploy:
+  provider: releases
+  file_glob: true
+  skip_cleanup: true
+  on:
+    tags: true
+  file: "*.tar.gz"
+  api_key:
+    secure: f7kQwWFw0PFpC5YZwJA3PAH+JY4aQ2Q0QkEHDpztyze3hdCQJ/pj7lfZQMTrzcdfOzj++EHryE8OBJ/2nW47WXyPgqzgWeWke+Bqx+lilJLSjYyN7Uvp7TsTbBG5J2m4vi3kWx0U2SWcs1NNwSpKf2ilzoihrvg8M56MI1d+F/8/iHgt+BW2m7a31XP+Ih87vGxHtTgscprG/rZPBdvWvDG6Zy3j9rzG0edtWhVv/CXfucvqLKMEXmd5vMhuQ/K0OA0GuWYwmnjol/BZrx6iU/9jqUYHNn6ip5eo9W2bVvLJWzjC574PYggvVF0KSaDnTAvSqNJ5x0q/xT4mulwTa4xaswrqDxv8Jutht28+ROb6KICdpOAKERrxhzVVGpcbTJiZpgWD8CKeFr/hDvSFnLPC1XMITQvLu8izVA8CkrNGlrpI+P+s0lPX3eyeWIBmL5rWwmb52j3PGgOlw5YCFdRkwJQeKCg4Y55xkpk/mZTnfL1jdeSrpSFelY8iAq6b0+Wh8SUpkD2xPLFeQuumznYzlOr6ZRMs8xyGLvWgkQ/3hEbGjGi/9IqoHhOMWdwrrBknWxZ+bF1R4SzYz8Jxa64Kh2oPeyEX/b2H4OxoYI0bFsUW+4en1JRwPNn4Ez5KbQ8wMJAJw9YJRfOQQhSfp3kHdLKqudXV2bET8fnGerU=
