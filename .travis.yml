@@ -10,7 +10,7 @@ services:
   - docker
 
 go:
-  - "1.12.9"
+  - "1.13.8"
 
 go_import_path: github.com/hashicorp/vault
 
@@ -45,6 +45,8 @@ script:
 - export XC_ARCH="amd64"
 - export XC_OS="linux"
 - export XC_OSARCH="linux/amd64"
+- export GO111MODULE=off
+- export GOTESTSUM_VERSION=0.3.3
 - make bootstrap
 - sed -i "s/VersionPrerelease = \".*\"/VersionPrerelease = \"$PRERELEASE\"/" vendor/github.com/hashicorp/vault/sdk/version/version_base.go
 - eval $TEST_COMMAND
