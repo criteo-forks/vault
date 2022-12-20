@@ -39,4 +39,4 @@ ENV CI true
 
 RUN mkdir -p /gopath/src/github.com/hashicorp/vault
 WORKDIR /gopath/src/github.com/hashicorp/vault
-CMD make bootstrap dev test-ember
+CMD git config --global --add safe.directory /gopath/src/github.com/hashicorp/vault; make bootstrap dev test-ember
