@@ -34,4 +34,4 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 
 RUN mkdir -p /gopath/src/github.com/hashicorp/vault
 WORKDIR /gopath/src/github.com/hashicorp/vault
-CMD make bootstrap static-dist bin
+CMD git config --global --add safe.directory /gopath/src/github.com/hashicorp/vault; make bootstrap static-dist bin
