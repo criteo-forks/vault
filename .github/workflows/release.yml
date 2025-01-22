@@ -1,0 +1,51 @@
+name: Build and Publish Vault Release (Universal Linux Binary)
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Go environment
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      # Bootstrap the environment
+      - name: Bootstrap the environment
+        run: |
+          make bootstrap
+
+      # Build Vault binary with UI
+      - name: Build Vault with UI
+        run: |
+          make static-dist dev-ui
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+          GOARCH: amd64
+
+      # Create a tar.gz package
+      - name: Create tar.gz
+        run: |
+          mkdir -p release
+          tar -czvf release/vault-${{ github.ref_name }}.tar.gz bin/vault
+        env:
+          BUILD_VERSION: ${{ github.ref_name }}
+
+      # Upload the artifact to the release
+      - name: Upload release artifact
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: release/vault-${{ github.ref_name }}.tar.gz
+          asset_name: vault-${{ github.ref_name }}.tar.gz
+          asset_content_type: application/gzip
