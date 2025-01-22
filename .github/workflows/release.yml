@@ -27,13 +27,11 @@ jobs:
       # Build Vault binary with UI
       - name: Build Vault with UI
         run: |
-          make static-dist
-          make bin
+          make static-dist dev-ui
         env:
           CGO_ENABLED: 0
           GOOS: linux
           GOARCH: amd64
-          BUILD_TAGS: 'ui'
 
       # Create a tar.gz package
       - name: Create tar.gz
