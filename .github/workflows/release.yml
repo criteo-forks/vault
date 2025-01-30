@@ -37,8 +37,7 @@ jobs:
       - name: Create tar.gz
         run: |
           mkdir -p release
-          cp bin/vault vault
-          tar -czvf release/vault-${{ github.ref_name }}.tar.gz vault
+          tar -czvf release/vault-${{ github.ref_name }}.tar.gz -C bin vault
         env:
           BUILD_VERSION: ${{ github.ref_name }}
 
