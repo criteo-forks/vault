@@ -27,11 +27,14 @@ jobs:
       # Build Vault binary with UI
       - name: Build Vault with UI
         run: |
-          make static-dist dev-ui
+          make static-dist bin
         env:
           CGO_ENABLED: 0
           GOOS: linux
           GOARCH: amd64
+          XC_ARCH: "amd64"
+          XC_OS: "linux darwin windows"
+          XC_OSARCH: "linux/amd64 darwin/amd64 windows/amd64"
 
       # Create a tar.gz package
       - name: Create tar.gz
