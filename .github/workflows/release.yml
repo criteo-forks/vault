@@ -53,9 +53,6 @@ jobs:
 
       # Upload the artifact to the release
       - name: Upload release artifact
-        uses: actions/upload-release-asset@v2
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: release/vault-${{ github.ref_name }}.tar.gz
-          asset_name: vault-${{ github.ref_name }}.tar.gz
-          asset_content_type: application/gzip
+          files: release/vault-${{ github.ref_name }}.tar.gz
