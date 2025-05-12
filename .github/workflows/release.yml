@@ -2,7 +2,10 @@ name: Build and Publish Vault Release (Universal Linux Binary)
 
 on:
   release:
-    types: [created]
+    types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   build-and-publish:
@@ -44,9 +47,13 @@ jobs:
         env:
           BUILD_VERSION: ${{ github.ref_name }}
 
+      # Check artifact path
+      - name: Check artifact path
+        run: ls -la release/
+
       # Upload the artifact to the release
       - name: Upload release artifact
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v2
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: release/vault-${{ github.ref_name }}.tar.gz
